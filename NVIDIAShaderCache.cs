@@ -24,7 +24,7 @@ class NVIDIAShaderCache
         return packageFamilyNames;
     }
 
-    public static string GetProcessName(string path, List<string> packageFamilyNames = null)
+    public static string GetProcess(string path, List<string> packageFamilyNames = null)
     {
         packageFamilyNames ??= GetPackageFamilyNames();
         byte[] bytes = File.ReadAllBytes(path);
@@ -50,7 +50,7 @@ class NVIDIAShaderCache
             {
                 if (new FileInfo(paths[i]).Length == 1024)
                 {
-                    string process = GetProcessName(paths[i], packageFamilyNames);
+                    string process = GetProcess(paths[i], packageFamilyNames);
                     if (!processes.ContainsValue(process) && !string.IsNullOrEmpty(process))
                     {
                         string[] substrings = Path.GetFileNameWithoutExtension(paths[i]).Split('_');
