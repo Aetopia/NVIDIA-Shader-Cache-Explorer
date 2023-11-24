@@ -33,13 +33,12 @@ public class MainForm : Form
         ToolStripButton delete = new() { Text = "🗑️ Delete" };
 
 
-
         menuStrip.Items.AddRange(new ToolStripItem[] { refresh, delete });
         tableLayoutPanel.Controls.Add(menuStrip);
         panel.Controls.Add(listView);
-        Controls.AddRange(new Control[] { panel, tableLayoutPanel });
+        Controls.AddRange([panel, tableLayoutPanel]);
 
-        listView.Columns.AddRange(new ColumnHeader[] { new() { Text = "Process" }, new() { Text = "Size" } });
+        listView.Columns.AddRange([new() { Text = "Process" }, new() { Text = "Size" }]);
         listView.ItemSelectionChanged += (sender, e) => { e.Item.Focused = false; e.Item.Selected = false; };
 
         refresh.Click += (sender, e) =>

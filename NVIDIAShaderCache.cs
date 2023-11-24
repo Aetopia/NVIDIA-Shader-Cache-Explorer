@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Windows.Management.Deployment;
+using Windows.ApplicationModel;
+using System.Text;
 
 class NVIDIAShaderCache
 {
@@ -13,24 +16,42 @@ class NVIDIAShaderCache
         return path;
     }
 
+    private static List<string> GetPackageFamilyNames()
+    {
+        List<string> packageFamilyNames = [];
+        foreach (Package package in new PackageManager().FindPackages())
+            packageFamilyNames.Add(package.Id.FamilyName);
+        return packageFamilyNames;
+    }
+
+    public static string GetProcessName(string path, List<string> packageFamilyNames = null)
+    {
+        packageFamilyNames ??= GetPackageFamilyNames();
+        byte[] bytes = File.ReadAllBytes(path);
+        for (int i = 0; i < bytes.Length; i++)
+            if (bytes[i] == 0) bytes[i] = (byte)'|';
+        string[] content = Encoding.UTF8.GetString(bytes).Split(['|'], StringSplitOptions.RemoveEmptyEntries);
+        for (int i = 0; i < content.Length; i++)
+        {
+            string value = content[i].Trim().ToLower();
+            if (packageFamilyNames.Contains(value) || value.EndsWith(".exe"))
+                return value;
+        }
+        return null;
+    }
 
     public static Dictionary<string, string> GetProcesses(string path = null)
     {
         Dictionary<string, string> processes = [];
+        List<string> packageFamilyNames = GetPackageFamilyNames();
         string[] paths = Directory.GetFiles(path ??= GetPath(), "*.toc");
         for (int i = 0; i < paths.Length; i++)
             try
             {
-                string process = "";
                 if (new FileInfo(paths[i]).Length == 1024)
                 {
-                    byte[] bytes = File.ReadAllBytes(paths[i]);
-                    for (int j = 88; j < bytes.Length; j++)
-                    {
-                        if (bytes[j] == 0) break;
-                        process += (char)bytes[j];
-                    }
-                    if (!processes.ContainsValue(process))
+                    string process = GetProcessName(paths[i], packageFamilyNames);
+                    if (!processes.ContainsValue(process) && !string.IsNullOrEmpty(process))
                     {
                         string[] substrings = Path.GetFileNameWithoutExtension(paths[i]).Split('_');
                         processes.Add($"{substrings[0]}_{substrings[1]}_{substrings[2]}", process);
