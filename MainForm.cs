@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Drawing;
-using System;
 using System.IO;
+using System.Threading;
+using System;
 
 public class MainForm : Form
 {
@@ -22,16 +23,22 @@ public class MainForm : Form
     {
         Text = "NVIDIA Shader Cache Explorer";
         Font = SystemFonts.MessageBoxFont;
-        string path = "";
         Dictionary<string, string> processes = [];
         Dictionary<string, long> sizes = [];
         TableLayoutPanel tableLayoutPanel = new() { Dock = DockStyle.Top, AutoSize = true };
         Panel panel = new() { AutoSize = true, Dock = DockStyle.Fill };
         MenuStrip menuStrip = new();
-        ListView listView = new() { Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, CheckBoxes = true };
+        ListView listView = new()
+        {
+            Dock = DockStyle.Fill,
+            View = View.Details,
+            CheckBoxes = true,
+            MultiSelect = false,
+            HeaderStyle = ColumnHeaderStyle.None,
+            BorderStyle = BorderStyle.None
+        };
         ToolStripButton refresh = new() { Text = "⟳ Refresh" };
-        ToolStripButton delete = new() { Text = "🗑️ Delete" };
-
+        ToolStripButton delete = new() { Text = "🗑️ Delete", Enabled = false };
 
         menuStrip.Items.AddRange(new ToolStripItem[] { refresh, delete });
         tableLayoutPanel.Controls.Add(menuStrip);
@@ -40,23 +47,30 @@ public class MainForm : Form
 
         listView.Columns.AddRange([new() { Text = "Process" }, new() { Text = "Size" }]);
         listView.ItemSelectionChanged += (sender, e) => { e.Item.Focused = false; e.Item.Selected = false; };
+        listView.ItemChecked += (sender, e) => { delete.Enabled = listView.CheckedItems.Count != 0; };
 
         refresh.Click += (sender, e) =>
         {
+            delete.Enabled = refresh.Enabled = listView.Enabled = false;
             listView.Items.Clear();
-            sizes = NVIDIAShaderCache.GetShaderCacheSizes(processes = NVIDIAShaderCache.GetProcesses(path = NVIDIAShaderCache.GetPath()), path);
-            foreach (KeyValuePair<string, string> keyValuePair in processes)
-                listView.Items.Add(new ListViewItem(new string[] { keyValuePair.Value, FormatBytes(sizes[keyValuePair.Key]) }));
+            new Thread(() =>
+            {
+                sizes = NVIDIAShaderCache.GetSizes(processes = NVIDIAShaderCache.GetProcesses());
+                foreach (KeyValuePair<string, string> keyValuePair in processes)
+                    listView.Items.Add(new ListViewItem(new string[] { keyValuePair.Value, FormatBytes(sizes[keyValuePair.Key]) }));
+                refresh.Enabled = listView.Enabled = true;
+            }).Start();
         };
 
         delete.Click += (sender, e) =>
         {
-            foreach (ListViewItem listViewItem in listView.Items)
-                if (listViewItem.Checked)
-                    foreach (KeyValuePair<string, string> keyValuePair in processes)
-                        if (listViewItem.Text == keyValuePair.Value)
-                            foreach (string file in Directory.GetFiles(path, $"{keyValuePair.Key}*"))
-                                try { File.Delete(file); }
+            List<string> paths = NVIDIAShaderCache.GetPaths();
+            foreach (ListViewItem listViewItem in listView.CheckedItems)
+                foreach (KeyValuePair<string, string> keyValuePair in processes)
+                    if (listViewItem.Text == keyValuePair.Value)
+                        foreach (string path in paths)
+                            if (path.Contains(keyValuePair.Key))
+                                try { File.Delete(path); }
                                 catch { }
             refresh.PerformClick();
         };

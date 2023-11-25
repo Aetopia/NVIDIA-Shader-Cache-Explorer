@@ -8,13 +8,9 @@
 
     <AssemblyName>NVIDIA Shader Cache Explorer</AssemblyName>
     <Copyright>Aetopia</Copyright>
-    <Version>1.1</Version>
-    <AssemblyVersion>1.1</AssemblyVersion>
-    <FileVersion>1.1</FileVersion>
+    <Version>1.2</Version>
+    <AssemblyVersion>1.2</AssemblyVersion>
+    <FileVersion>1.2</FileVersion>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.22621.2428" />
-  </ItemGroup>
 
 </Project>
