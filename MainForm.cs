@@ -38,11 +38,11 @@ public class MainForm : Form
             HeaderStyle = ColumnHeaderStyle.None,
             BorderStyle = BorderStyle.None
         };
-        ToolStripButton refresh = new() { Text = "⟳ Refresh" };
-        ToolStripButton all = new() { Text = "✅ All" };
+        ToolStripButton refresh = new() { Text = "⟳ Refresh" }; 
+                       ToolStripButton select = new() { Text = "✅ Select" };
         ToolStripButton delete = new() { Text = "🗑️ Delete", Enabled = false };
 
-        menuStrip.Items.AddRange(new ToolStripItem[] { refresh, all, delete });
+        menuStrip.Items.AddRange(new ToolStripItem[] { refresh,  select,delete});
         tableLayoutPanel.Controls.Add(menuStrip);
         panel.Controls.Add(listView);
         Controls.AddRange([panel, tableLayoutPanel]);
@@ -52,10 +52,10 @@ public class MainForm : Form
         listView.ItemChecked += (sender, e) =>
         {
             delete.Enabled = listView.CheckedItems.Count != 0;
-            all.Text = listView.CheckedItems.Count != listView.Items.Count ? "✅ All" : "🟩 All";
+        select.Text = listView.CheckedItems.Count != listView.Items.Count ? "✅ Select" : "🟩 Select";
         };
 
-        all.Click += (sender, e) =>
+        select.Click += (sender, e) =>
         {
             bool check = listView.CheckedItems.Count != listView.Items.Count;
             foreach (ListViewItem listViewItem in listView.Items)
@@ -64,7 +64,7 @@ public class MainForm : Form
 
         refresh.Click += (sender, e) =>
         {
-            refresh.Enabled = all.Enabled = delete.Enabled = listView.Enabled = false;
+            refresh.Enabled = select.Enabled = delete.Enabled = listView.Enabled = false;
             listView.Items.Clear();
             new Thread(() =>
             {
@@ -75,8 +75,8 @@ public class MainForm : Form
                     listView.Items.Add(new ListViewItem(new string[] { keyValuePair.Key, FormatBytes(sizes[keyValuePair.Key]) }));
                 }
                 refresh.Enabled = listView.Enabled = true;
-                all.Enabled = listView.Items.Count != 0;
-                if (listView.Items.Count != 0) all.Text = "✅ All";
+                select.Enabled = listView.Items.Count != 0;
+                if (listView.Items.Count != 0) select.Text = "✅ Select";
             }).Start();
         };
 
