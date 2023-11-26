@@ -11,7 +11,6 @@ class NVIDIAShaderCache
     public static List<string> GetPaths()
     {
         List<string> paths = [];
-        //  string searchPattern = tableOfContents ? "*.toc" : "*";
         string path = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%Low\NVIDIA\PerDriverVersion\DXCache");
         if (Directory.Exists(path))
             paths.AddRange(Directory.GetFiles(path));
