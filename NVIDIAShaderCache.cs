@@ -4,94 +4,70 @@ using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 class NVIDIAShaderCache
 {
-    public static List<string> GetPaths(bool tableOfContents = false)
+    public static List<string> GetPaths()
     {
         List<string> paths = [];
-        string searchPattern = tableOfContents ? "*.toc" : "*";
+        //  string searchPattern = tableOfContents ? "*.toc" : "*";
         string path = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%Low\NVIDIA\PerDriverVersion\DXCache");
         if (Directory.Exists(path))
-            paths.AddRange(Directory.GetFiles(path, searchPattern));
+            paths.AddRange(Directory.GetFiles(path));
         if (Directory.Exists(path = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\NVIDIA\DXCache")))
-            paths.AddRange(Directory.GetFiles(path, searchPattern));
+            paths.AddRange(Directory.GetFiles(path));
         return paths;
     }
 
-    private static List<string> GetPackageFamilyNames()
+    public static Dictionary<string, List<string>> GetProcesses(List<string> paths = null)
     {
-        List<string> packageFamilyNames = [];
-        using (Process process = new()
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "PowerShell.exe",
-                Arguments = "-c (Get-AppxPackage).PackageFamilyName",
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            }
-        })
-        {
-            process.Start();
-            process.WaitForExit();
-            packageFamilyNames = process.StandardOutput.ReadToEnd()
-                 .Split(['\n'], StringSplitOptions.RemoveEmptyEntries)
-                 .Select(e => e.Trim().ToLower())
-                 .Where(value => !string.IsNullOrEmpty(value))
-                 .ToList();
-        }
-        return packageFamilyNames;
-    }
-
-    private static string GetProcess(string path, List<string> packageFamilyNames = null)
-    {
-        packageFamilyNames ??= GetPackageFamilyNames();
-        byte[] bytes = File.ReadAllBytes(path);
-        for (int i = 0; i < bytes.Length; i++)
-            if (bytes[i] == 0) bytes[i] = (byte)'|';
-        string[] content = Encoding.UTF8.GetString(bytes).Split(['|'], StringSplitOptions.RemoveEmptyEntries);
-        for (int i = 0; i < content.Length; i++)
-        {
-            string value = content[i].Trim().ToLower();
-            if (packageFamilyNames.Contains(value) || value.EndsWith(".exe"))
-                return value;
-        }
-        return null;
-    }
-
-    public static Dictionary<string, string> GetProcesses()
-    {
-        Dictionary<string, string> processes = [];
-        List<string> packageFamilyNames = GetPackageFamilyNames();
-        foreach (string path in GetPaths(true))
-            try
-            {
-                if (new FileInfo(path).Length == 1024)
+        Dictionary<string, List<string>> processes = [];
+        foreach (string path in paths ??= GetPaths())
+            if (path.ToLower().EndsWith(".toc"))
+                try
                 {
-                    string process = GetProcess(path, packageFamilyNames);
-                    if (!processes.ContainsValue(process) && !string.IsNullOrEmpty(process))
+                    string process = "";
+                    string[] content = File.ReadAllText(path).Split([(char)0], StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 0; i < content.Length; i++)
                     {
-                        string[] substrings = Path.GetFileNameWithoutExtension(path).Split('_');
-                        processes.Add($"{substrings[0]}_{substrings[1]}_{substrings[2]}", process);
+                        process = content[i].Trim().ToLower();
+                        if (Regex.IsMatch(process, @"^[a-zA-Z0-9.-]+_[a-zA-Z0-9]+$") || process.EndsWith(".exe"))
+                        {
+                            if (!processes.ContainsKey(process) && !string.IsNullOrEmpty(process))
+                                processes.Add(process, []);
+                            string[] substrings = Path.GetFileNameWithoutExtension(path).Split('_');
+                            try
+                            {
+                                string uid = $"{substrings[0]}_{substrings[1]}_{substrings[2]}";
+                                if (!processes[process].Contains(uid))
+                                    processes[process].Add(uid);
+                            }
+                            catch (ArgumentException) { }
+                            break;
+                        }
                     }
                 }
-            }
-            catch (IOException) { }
+                catch (IOException) { }
         return processes;
     }
 
-    public static Dictionary<string, long> GetSizes(Dictionary<string, string> processes = null)
+    public static Dictionary<string, long> GetSizes(Dictionary<string, List<string>> processes = null, List<string> paths = null)
     {
+        paths ??= GetPaths();
         Dictionary<string, long> sizes = [];
-        foreach (KeyValuePair<string, string> keyValuePair in processes ?? GetProcesses())
+
+        foreach (KeyValuePair<string, List<string>> keyValuePair in processes ?? GetProcesses())
         {
-            long bytes = 0;
-            foreach (string path in GetPaths())
-                if (path.Contains(keyValuePair.Key)) bytes += new FileInfo(path).Length;
-            sizes.Add(keyValuePair.Key, bytes);
+            long buffer = 0;
+            foreach (string path in paths)
+                foreach (string uid in keyValuePair.Value)
+                    if (Path.GetFileNameWithoutExtension(path).StartsWith(uid)) buffer += new FileInfo(path).Length;
+            sizes.Add(keyValuePair.Key, buffer);
         }
         return sizes;
     }
+
+
+
 }

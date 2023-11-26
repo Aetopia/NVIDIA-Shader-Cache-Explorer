@@ -4,7 +4,7 @@ class Program
 {
     static void Main()
     {
-            Application.EnableVisualStyles();
-            Application.Run(new MainForm());
+        Application.EnableVisualStyles();
+        Application.Run(new MainForm());
     }
 }
