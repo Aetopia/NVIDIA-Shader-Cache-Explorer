@@ -28,24 +28,25 @@ class NVIDIAShaderCache
                 {
                     string process = "";
                     string[] content = File.ReadAllText(path).Split([(char)0], StringSplitOptions.RemoveEmptyEntries);
-                    for (int i = 0; i < content.Length; i++)
-                    {
-                        process = content[i].Trim().ToLower();
-                        if (Regex.IsMatch(process, @"^[a-zA-Z0-9.-]+_[a-zA-Z0-9]+$") || process.EndsWith(".exe"))
+                    if (content[0].StartsWith("DXDC"))
+                        for (int i = 0; i < content.Length; i++)
                         {
-                            if (!processes.ContainsKey(process) && !string.IsNullOrEmpty(process))
-                                processes.Add(process, []);
-                            string[] substrings = Path.GetFileNameWithoutExtension(path).Split('_');
-                            try
+                            process = content[i].Trim().ToLower();
+                            if (Regex.IsMatch(process, @"^[a-zA-Z0-9.-]+_[a-zA-Z0-9]+$") || process.EndsWith(".exe"))
                             {
-                                string uid = $"{substrings[0]}_{substrings[1]}_{substrings[2]}";
-                                if (!processes[process].Contains(uid))
-                                    processes[process].Add(uid);
+                                if (!processes.ContainsKey(process) && !string.IsNullOrEmpty(process))
+                                    processes.Add(process, []);
+                                string[] substrings = Path.GetFileNameWithoutExtension(path).Split('_');
+                                try
+                                {
+                                    string uid = $"{substrings[0]}_{substrings[1]}_{substrings[2]}";
+                                    if (!processes[process].Contains(uid))
+                                        processes[process].Add(uid);
+                                }
+                                catch (ArgumentException) { }
+                                break;
                             }
-                            catch (ArgumentException) { }
-                            break;
                         }
-                    }
                 }
                 catch (IOException) { }
         return processes;
