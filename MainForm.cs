@@ -3,7 +3,6 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.IO;
 using System.Threading;
-using System;
 
 public class MainForm : Form
 {
