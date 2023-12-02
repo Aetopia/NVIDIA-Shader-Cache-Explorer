@@ -68,7 +68,6 @@ public class MainForm : Form
             listView.Items.Clear();
             new Thread(() =>
             {
-
                 sizes = NVIDIAShaderCache.GetSizes(processes = NVIDIAShaderCache.GetProcesses(paths = NVIDIAShaderCache.GetPaths()));
                 foreach (KeyValuePair<string, List<string>> keyValuePair in processes)
                 {
