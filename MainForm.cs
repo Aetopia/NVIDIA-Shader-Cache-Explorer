@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.IO;
 using System.Threading;
+using System;
 
 public class MainForm : Form
 {
@@ -37,11 +38,11 @@ public class MainForm : Form
             HeaderStyle = ColumnHeaderStyle.None,
             BorderStyle = BorderStyle.None
         };
-        ToolStripButton refresh = new() { Text = "⟳ Refresh" }; 
-                       ToolStripButton select = new() { Text = "✅ Select" };
+        ToolStripButton refresh = new() { Text = "⟳ Refresh" };
+        ToolStripButton select = new() { Text = "✅ Select" };
         ToolStripButton delete = new() { Text = "🗑️ Delete", Enabled = false };
 
-        menuStrip.Items.AddRange(new ToolStripItem[] { refresh,  select,delete});
+        menuStrip.Items.AddRange(new ToolStripItem[] { refresh, select, delete });
         tableLayoutPanel.Controls.Add(menuStrip);
         panel.Controls.Add(listView);
         Controls.AddRange([panel, tableLayoutPanel]);
@@ -51,7 +52,7 @@ public class MainForm : Form
         listView.ItemChecked += (sender, e) =>
         {
             delete.Enabled = listView.CheckedItems.Count != 0;
-        select.Text = listView.CheckedItems.Count != listView.Items.Count ? "✅ Select" : "🟩 Select";
+            select.Text = listView.CheckedItems.Count != listView.Items.Count ? "✅ Select" : "🟩 Select";
         };
 
         select.Click += (sender, e) =>
@@ -83,11 +84,24 @@ public class MainForm : Form
         {
             foreach (ListViewItem listViewItem in listView.CheckedItems)
                 if (processes.ContainsKey(listViewItem.Text))
-                    foreach (string uid in processes[listViewItem.Text])
+                {
+                    if (listViewItem.Text == "glcache")
+                    {
                         foreach (string path in paths)
-                            if (Path.GetFileNameWithoutExtension(path).StartsWith(uid))
-                                try { File.Delete(path); }
+                            if (path.ToLower().Contains("glcache"))
+                            {
+                                try { Directory.Delete($"{path.Split(new string[] { "GLCache" }, StringSplitOptions.RemoveEmptyEntries)[0]}GLCache", true); }
                                 catch { }
+                                break;
+                            }
+                    }
+                    else
+                        foreach (string uid in processes[listViewItem.Text])
+                            foreach (string path in paths)
+                                if (Path.GetFileNameWithoutExtension(path).StartsWith(uid))
+                                    try { File.Delete(path); }
+                                    catch { }
+                }
             refresh.PerformClick();
         };
 

@@ -8,17 +8,18 @@ class NVIDIAShaderCache
     public static List<string> GetPaths()
     {
         List<string> paths = [];
-        string path = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%Low\NVIDIA\PerDriverVersion\DXCache");
+        string path = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%Low\NVIDIA\PerDriverVersion");
         if (Directory.Exists(path))
-            paths.AddRange(Directory.GetFiles(path));
-        if (Directory.Exists(path = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\NVIDIA\DXCache")))
-            paths.AddRange(Directory.GetFiles(path));
+            paths.AddRange(Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories));
+        if (Directory.Exists(path = Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\NVIDIA")))
+            paths.AddRange(Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories));
         return paths;
     }
 
     public static Dictionary<string, List<string>> GetProcesses(List<string> paths = null)
     {
         Dictionary<string, List<string>> processes = [];
+        bool glCache = false;
         foreach (string path in paths ??= GetPaths())
             if (path.ToLower().EndsWith(".toc"))
                 try
@@ -44,8 +45,11 @@ class NVIDIAShaderCache
                                 break;
                             }
                         }
+                    else if (content[0].StartsWith("CDVN") && !glCache)
+                        glCache = true;
                 }
                 catch (IOException) { }
+        if (glCache) processes.Add("glcache", []);
         return processes;
     }
 
@@ -58,8 +62,13 @@ class NVIDIAShaderCache
         {
             long buffer = 0;
             foreach (string path in paths)
+            {
+                if (processes.ContainsKey("glcache") && path.ToLower().Contains("glcache"))
+                  buffer += new FileInfo(path).Length;
                 foreach (string uid in keyValuePair.Value)
-                    if (Path.GetFileNameWithoutExtension(path).StartsWith(uid)) buffer += new FileInfo(path).Length;
+                    if (Path.GetFileNameWithoutExtension(path).StartsWith(uid))
+                        buffer += new FileInfo(path).Length;
+            }
             sizes.Add(keyValuePair.Key, buffer);
         }
         return sizes;
