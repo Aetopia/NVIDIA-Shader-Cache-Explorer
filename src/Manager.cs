@@ -68,7 +68,7 @@ static class Manager
                 if (!apps.TryGetValue(key, out var value) && path.EndsWith(".toc", StringComparison.OrdinalIgnoreCase))
                 {
                     var collection = ReadAllText(path).Split(['\0'], StringSplitOptions.RemoveEmptyEntries);
-                    if (collection.FirstOrDefault() is "DXDC")
+                    if (collection.Any(_ => _ is "DXDC"))
                         apps.Add(key, value = new(collection.First(_ => _.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || Regex.IsMatch(_, @"^[a-zA-Z0-9.-]+_[a-zA-Z0-9]+$"))));
                 }
                 value?.Add(path);
