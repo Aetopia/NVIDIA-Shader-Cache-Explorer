@@ -37,8 +37,8 @@ class OpenGL : App
 
 static class Manager
 {
-    static readonly string DXCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\LocalLow\NVIDIA\PerDriverVersion");
-    static readonly string GLCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA");
+    static readonly string DXCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\LocalLow\NVIDIA\PerDriverVersion\DXCache");
+    static readonly string GLCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"NVIDIA\GLCache");
 
     static string ReadAllText(string path)
     {
