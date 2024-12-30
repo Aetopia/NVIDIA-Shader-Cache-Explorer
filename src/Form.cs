@@ -1,18 +1,22 @@
-using System.Collections.Generic;
+using System;
 using System.Drawing;
-using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
-
-class MainForm : Form
+class Form : System.Windows.Forms.Form
 {
-    internal MainForm()
+    enum _ { B, KB, MB, GB }
+
+    static string String(float _) { var value = (int)Math.Log(_, 1024); return $"{_ / Math.Pow(1024, value):0.00} {(_)value}"; }
+
+    internal Form()
     {
         Application.ThreadException += (sender, e) =>
         {
             var exception = e.Exception;
             while (exception.InnerException != null) exception = exception.InnerException;
-            NativeMethods.ShellMessageBox(hWnd: Handle, lpcText: exception.Message);
+            Unmanaged.ShellMessageBox(hWnd: Handle, lpcText: exception.Message);
             Close();
         };
 
@@ -93,10 +97,8 @@ class MainForm : Form
 
         toolStripButton1.Click += async (sender, e) =>
         {
-            MainMenuStrip.Enabled = listView.Enabled = false;
-            listView.Items.Clear();
-            var shaders = await ShaderCacheManager.GetShadersAsync();
-            foreach (var shader in shaders) listView.Items.Add(new ListViewItem([shader.Name, shader.Size]) { Tag = shader.Files });
+            MainMenuStrip.Enabled = listView.Enabled = false; listView.Items.Clear();
+            foreach (var item in await Task.Run(Manager.Get)) listView.Items.Add(new ListViewItem([item.Name, String(item.Size)]) { Tag = item });
             MainMenuStrip.Enabled = listView.Enabled = true;
         };
 
@@ -104,12 +106,9 @@ class MainForm : Form
 
         toolStripButton3.Click += (sender, e) => { foreach (ListViewItem listViewItem in listView.Items) listViewItem.Checked = false; };
 
-        toolStripButton4.Click += (sender, e) =>
+        toolStripButton4.Click += async (sender, e) =>
         {
-            foreach (ListViewItem listViewItem in listView.CheckedItems)
-                foreach (var path in (IEnumerable<string>)listViewItem.Tag)
-                    if (!listViewItem.SubItems[0].Text.Equals("glcache")) NativeMethods.DeleteFile(path);
-                    else try { Directory.Delete(path, true); } catch { }
+            await Task.Run(() => Parallel.ForEach(listView.CheckedItems.Cast<ListViewItem>().Select(_ => (App)_.Tag), _ => { _.Delete(); }));
             if (listView.CheckedItems.Count != 0) toolStripButton1.PerformClick();
         };
 

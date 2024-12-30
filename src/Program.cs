@@ -7,6 +7,6 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new MainForm());
+        Application.Run(new Form());
     }
 }
