@@ -4,5 +4,7 @@
     <TargetFramework>net481</TargetFramework>
     <LangVersion>latest</LangVersion>
     <UseWindowsForms>true</UseWindowsForms>
+    <Optimize>true</Optimize>
+    <PublishRelease></PublishRelease>
   </PropertyGroup>
 </Project>
