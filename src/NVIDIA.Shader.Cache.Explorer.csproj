@@ -5,6 +5,6 @@
     <LangVersion>latest</LangVersion>
     <UseWindowsForms>true</UseWindowsForms>
     <Optimize>true</Optimize>
-    <PublishRelease></PublishRelease>
+    <PublishRelease>true</PublishRelease>
   </PropertyGroup>
 </Project>
