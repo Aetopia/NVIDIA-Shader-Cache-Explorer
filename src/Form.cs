@@ -3,12 +3,33 @@ using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+
+enum Sort { SizeDescending, SizeAscending, NameAscending, NameDescending }
 
 class Form : System.Windows.Forms.Form
 {
     enum _ { B, KB, MB, GB }
 
     static string String(float _) { var value = (int)Math.Log(_, 1024); return $"{_ / Math.Pow(1024, value):0.00} {(_)value}"; }
+
+    Sort Sort = default;
+
+    IEnumerable<App> Enumerable(App[] source) => Sort switch
+    {
+        Sort.SizeDescending => source.OrderByDescending(_ => _.Size),
+        Sort.SizeAscending => source.OrderBy(_ => _.Size),
+        Sort.NameAscending => source.OrderBy(_ => _.Name),
+        Sort.NameDescending => source.OrderByDescending(_ => _.Name),
+        _ => default,
+    };
+
+    void Insert(ListView listView, IEnumerable<App> source)
+    {
+        MainMenuStrip.Enabled = listView.Enabled = false; listView.Items.Clear();
+        foreach (var item in source) listView.Items.Add(new ListViewItem([item.Name, String(item.Size)]) { Tag = item });
+        MainMenuStrip.Enabled = listView.Enabled = true;
+    }
 
     internal Form()
     {
@@ -49,15 +70,15 @@ class Form : System.Windows.Forms.Form
         };
         MainMenuStrip.Items.Add(toolStripButton1);
 
-        ToolStripButton toolStripButton2 = new("")
+        ToolStripButton toolStripButton2 = new("")
         {
             AutoSize = true,
             Margin = default,
-            Font = font
+            Font = font,
         };
         MainMenuStrip.Items.Add(toolStripButton2);
 
-        ToolStripButton toolStripButton3 = new("")
+        ToolStripButton toolStripButton3 = new("")
         {
             AutoSize = true,
             Margin = default,
@@ -65,13 +86,21 @@ class Form : System.Windows.Forms.Form
         };
         MainMenuStrip.Items.Add(toolStripButton3);
 
-        ToolStripButton toolStripButton4 = new("")
+        ToolStripButton toolStripButton4 = new("")
+        {
+            AutoSize = true,
+            Margin = default,
+            Font = font
+        };
+        MainMenuStrip.Items.Add(toolStripButton4);
+
+        ToolStripButton toolStripButton5 = new("")
         {
             AutoSize = true,
             Margin = default,
             Font = font,
         };
-        MainMenuStrip.Items.Add(toolStripButton4);
+        MainMenuStrip.Items.Add(toolStripButton5);
 
         ListView listView = new()
         {
@@ -95,18 +124,39 @@ class Form : System.Windows.Forms.Form
                 columnHeader.Width = width;
         };
 
-        toolStripButton1.Click += async (sender, e) =>
-        {
-            MainMenuStrip.Enabled = listView.Enabled = false; listView.Items.Clear();
-            foreach (var item in await Task.Run(Manager.Get)) listView.Items.Add(new ListViewItem([item.Name, String(item.Size)]) { Tag = item });
-            MainMenuStrip.Enabled = listView.Enabled = true;
-        };
+        App[] apps = default;
 
-        toolStripButton2.Click += (sender, e) => { foreach (ListViewItem listViewItem in listView.Items) listViewItem.Checked = true; };
+        toolStripButton1.Click += async (sender, e) => Insert(listView, Enumerable(apps = await Task.Run(Manager.Get)));
 
-        toolStripButton3.Click += (sender, e) => { foreach (ListViewItem listViewItem in listView.Items) listViewItem.Checked = false; };
+        toolStripButton2.Click += (sender, e) =>
+{
+    switch (Sort)
+    {
+        case Sort.SizeDescending:
+            Sort = Sort.SizeAscending;
+            break;
 
-        toolStripButton4.Click += async (sender, e) =>
+        case Sort.SizeAscending:
+            Sort = Sort.NameAscending;
+            break;
+
+        case Sort.NameAscending:
+            Sort = Sort.NameDescending;
+            break;
+
+        case Sort.NameDescending:
+            Sort = Sort.SizeDescending;
+            break;
+    }
+
+    Insert(listView, Enumerable(apps));
+};
+
+        toolStripButton3.Click += (sender, e) => { foreach (ListViewItem listViewItem in listView.Items) listViewItem.Checked = true; };
+
+        toolStripButton4.Click += (sender, e) => { foreach (ListViewItem listViewItem in listView.Items) listViewItem.Checked = false; };
+
+        toolStripButton5.Click += async (sender, e) =>
         {
             await Task.Run(() => Parallel.ForEach(listView.CheckedItems.Cast<ListViewItem>().Select(_ => (App)_.Tag), _ => { _.Delete(); }));
             if (listView.CheckedItems.Count != 0) toolStripButton1.PerformClick();

@@ -40,16 +40,6 @@ static class Manager
     static readonly string DXCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\LocalLow\NVIDIA\PerDriverVersion\DXCache");
     static readonly string GLCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"NVIDIA\GLCache");
 
-    static string ReadAllText(string path)
-    {
-        try
-        {
-            using StreamReader reader = new(File.OpenRead(path));
-            return reader.ReadToEnd();
-        }
-        catch (IOException) { return string.Empty; }
-    }
-
     internal static App[] Get()
     {
         Dictionary<string, App> apps = [];
@@ -57,7 +47,7 @@ static class Manager
         if (Directory.Exists(GLCache))
         {
             OpenGL app = new("opengl", GLCache);
-            foreach (var path in Directory.EnumerateFiles(GLCache, "*", SearchOption.AllDirectories)) app.Add(path);//app.Add(GLCache);
+            foreach (var path in Directory.EnumerateFiles(GLCache, "*", SearchOption.AllDirectories)) app.Add(path);
             if (app.Size is not 0) apps.Add(string.Empty, app);
         }
 
@@ -67,14 +57,21 @@ static class Manager
                 var key = string.Join("_", Path.GetFileNameWithoutExtension(path).Split('_').Take(3));
                 if (!apps.TryGetValue(key, out var value) && path.EndsWith(".toc", StringComparison.OrdinalIgnoreCase))
                 {
-                    var collection = ReadAllText(path).Split(['\0'], StringSplitOptions.RemoveEmptyEntries);
-                    if (collection.Any(_ => _ is "DXDC"))
-                        apps.Add(key, value = new(collection.First(_ => _.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || Regex.IsMatch(_, @"^[a-zA-Z0-9.-]+_[a-zA-Z0-9]+$"))));
+                    try
+                    {
+                        var content = File.ReadAllText(path);
+                        var _ = false; foreach (var item in content.Split(['\0'], StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            if (!_ && item is "DXDC") _ = true;
+                            else if (_ && Regex.IsMatch(item, @"(^.*\.exe$|^[a-zA-Z0-9.-]+_[a-zA-Z0-9]+$)", RegexOptions.IgnoreCase | RegexOptions.Compiled)) { apps.Add(key, value = new(item)); break; }
+                        }
+                    }
+                    catch (IOException) { continue; }
                 }
                 value?.Add(path);
             }
 
-        return [.. apps.Values.OrderByDescending(_ => _.Size)];
+        return [.. apps.Values];
     }
 
 }
